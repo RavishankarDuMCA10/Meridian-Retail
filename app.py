@@ -3,13 +3,15 @@ import argparse
 import json
 import os
 import sys
+import urllib.request
 from pathlib import Path
 
-import anthropic
 from dotenv import load_dotenv
 
 APP_DIR = Path(__file__).parent
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+DEFAULT_MODEL = "qwen3:4b"
+DEFAULT_OLLAMA_HOST = "http://localhost:11434"
+OLLAMA_TIMEOUT_SECONDS = 60
 ALLOWED_REVIEW_STATUSES = {"READY_FOR_HUMAN_REVIEW", "NEEDS_INFORMATION", "BLOCKED"}
 REQUIRED_FIELDS = {"draft_reply", "evidence_refs", "missing_information", "review_status"}
 
@@ -122,26 +124,45 @@ def call_model(model_fn, case, policy_text):
     return validate_result(data)
 
 
-def make_real_model_fn(client, model):
+RESULT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "draft_reply": {"type": "string"},
+        "evidence_refs": {"type": "array", "items": {"type": "string"}},
+        "missing_information": {"type": "array", "items": {"type": "string"}},
+        "review_status": {"type": "string", "enum": sorted(ALLOWED_REVIEW_STATUSES)},
+    },
+    "required": sorted(REQUIRED_FIELDS),
+}
+
+
+def make_real_model_fn(host, model, timeout=OLLAMA_TIMEOUT_SECONDS):
     def _call(prompt):
-        response = client.messages.create(
-            model=model,
-            max_tokens=500,
-            messages=[{"role": "user", "content": prompt}],
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "think": False,
+            "format": RESULT_SCHEMA,
+            "options": {"temperature": 0, "num_predict": 500},
+        }
+        request = urllib.request.Request(
+            f"{host.rstrip('/')}/api/chat",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
         )
-        return response.content[0].text
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            body = json.loads(response.read())
+        return body["message"]["content"]
 
     return _call
 
 
 def build_default_model_fn():
     load_dotenv(APP_DIR / ".env")
-    api_key = os.getenv("APP_ANTHROPIC_API_KEY")
-    model = os.getenv("APP_ANTHROPIC_MODEL", DEFAULT_MODEL)
-    if not api_key:
-        raise RuntimeError("APP_ANTHROPIC_API_KEY is not set. Run: python setup_env.py")
-    client = anthropic.Anthropic(api_key=api_key, timeout=20, max_retries=0)
-    return make_real_model_fn(client, model)
+    host = os.getenv("APP_OLLAMA_HOST", DEFAULT_OLLAMA_HOST)
+    model = os.getenv("APP_OLLAMA_MODEL", DEFAULT_MODEL)
+    return make_real_model_fn(host, model)
 
 
 def print_section(title, body):
@@ -188,7 +209,7 @@ def run(case_id, simulate_timeout=False, offline_demo=False, model_fn=None):
         result = call_model(active_model_fn, case, policy_text)
         print_draft_result(result)
         return result
-    except (anthropic.APIError, RuntimeError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, KeyError, RuntimeError, json.JSONDecodeError, ValueError) as exc:
         result = unavailable_result()
         print_draft_result(result, notice=f"{manual_fallback_message()} ({type(exc).__name__})")
         return result

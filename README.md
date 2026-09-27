@@ -21,9 +21,16 @@ pip install -r requirements.txt
 python setup_env.py
 ```
 
-`setup_env.py` asks for your Anthropic API key (input hidden, never printed)
-and the model to use (default `claude-haiku-4-5-20251001`), then writes a
-project-local `.env` file. Copy `.env.example` if you'd rather edit it by
+The model runs locally through [Ollama](https://ollama.com). Install it, then
+pull the model:
+
+```bash
+ollama pull qwen3:4b
+```
+
+`setup_env.py` asks for the Ollama host (default `http://localhost:11434`)
+and the model to use (default `qwen3:4b`), then writes a project-local
+`.env` file. It's optional: without `.env` the tool uses those defaults. Copy `.env.example` if you'd rather edit it by
 hand. `.env` is git-ignored.
 
 ## Running
@@ -43,7 +50,7 @@ Each run prints three sections: `SUPPLIED FACTS`, `SUPPLIED POLICY`, and
   resolution -> policy P3 means the draft must not say the issue is
   resolved.
 
-### Demo modes (no API key needed, no network call)
+### Demo modes (no model needed, no network call)
 
 ```bash
 python app.py --case C1 --offline-demo       # prerecorded, labelled synthetic result
@@ -59,9 +66,9 @@ Both modes print an explicit notice and make no call to the model API.
   "unavailable" state instead of a stale or malformed draft.
 - If the API call itself fails (timeout, connection error, etc.), the tool
   shows the same safe "unavailable" state rather than a traceback.
-- The Anthropic client is created with an explicit API key, a 20 second
-  timeout, and `max_retries=0`. It reads `APP_ANTHROPIC_API_KEY` /
-  `APP_ANTHROPIC_MODEL` only - never the global `ANTHROPIC_API_KEY`.
+- The Ollama request uses a 60 second timeout and no retries, with
+  thinking disabled, temperature 0, and a JSON schema that constrains the
+  output. It reads `APP_OLLAMA_HOST` / `APP_OLLAMA_MODEL` only.
 
 ## Tests
 

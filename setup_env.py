@@ -1,35 +1,32 @@
 #!/usr/bin/env python3
-import getpass
 from pathlib import Path
 
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+DEFAULT_MODEL = "qwen3:4b"
+DEFAULT_HOST = "http://localhost:11434"
 ENV_PATH = Path(__file__).parent / ".env"
 
 
-def build_env_contents(api_key, model):
-    return f"APP_ANTHROPIC_API_KEY={api_key}\nAPP_ANTHROPIC_MODEL={model}\n"
+def build_env_contents(host, model):
+    return f"APP_OLLAMA_HOST={host}\nAPP_OLLAMA_MODEL={model}\n"
 
 
-def write_env_file(api_key, model, env_path=ENV_PATH):
-    env_path.write_text(build_env_contents(api_key, model))
+def write_env_file(host, model, env_path=ENV_PATH):
+    env_path.write_text(build_env_contents(host, model))
     env_path.chmod(0o600)
     return env_path
 
 
-def prompt_for_credentials():
-    api_key = getpass.getpass("Enter your Meridian Retail app Anthropic API key (input hidden): ")
+def prompt_for_settings():
+    host = input(f"Ollama host [default: {DEFAULT_HOST}]: ").strip() or DEFAULT_HOST
     model = input(f"Model to use [default: {DEFAULT_MODEL}]: ").strip() or DEFAULT_MODEL
-    return api_key, model
+    return host, model
 
 
 def main():
     print("Meridian Retail Support Drafting Tool - environment setup")
-    api_key, model = prompt_for_credentials()
-    if not api_key.strip():
-        print("No API key entered. Aborting without writing .env.")
-        return 1
-    path = write_env_file(api_key.strip(), model, ENV_PATH)
-    print(f"Wrote configuration to {path} (key not shown).")
+    host, model = prompt_for_settings()
+    path = write_env_file(host, model, ENV_PATH)
+    print(f"Wrote configuration to {path}.")
     return 0
 
 
