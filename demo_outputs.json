@@ -1,0 +1,20 @@
+{
+  "C1": {
+    "draft_reply": "Thank you for reporting the broken zip on your Jacket (order MR-1042). Since the damage was reported within two days of delivery, we can refer your case for human return review. A team member will contact you shortly to discuss next steps.",
+    "evidence_refs": ["P1", "P2"],
+    "missing_information": [],
+    "review_status": "READY_FOR_HUMAN_REVIEW"
+  },
+  "C2": {
+    "draft_reply": "",
+    "evidence_refs": ["P2"],
+    "missing_information": ["delivery_date"],
+    "review_status": "NEEDS_INFORMATION"
+  },
+  "C3": {
+    "draft_reply": "",
+    "evidence_refs": ["P3"],
+    "missing_information": [],
+    "review_status": "BLOCKED"
+  }
+}
