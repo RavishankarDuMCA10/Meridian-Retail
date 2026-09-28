@@ -1,0 +1,22 @@
+{
+  "support_queue": {
+    "description": "Case record from the support queue, keyed by case_id. Source of the customer's question and the case identifier.",
+    "source_file": "cases.json",
+    "fields": ["case_id", "customer_question"]
+  },
+  "order_record": {
+    "description": "Order details, keyed by order_id. Source of the product and delivery date.",
+    "source_file": "cases.json",
+    "fields": ["order_id", "product", "delivery_date"]
+  },
+  "issue_record": {
+    "description": "Issue status and details, keyed by case_id. Source of whether the issue is open or resolved.",
+    "source_file": "cases.json",
+    "fields": ["issue_status", "issue_details"]
+  },
+  "policy_register": {
+    "description": "The Meridian Retail support drafting policy rules (P1-P4).",
+    "source_file": "docs/policy.md",
+    "fields": ["P1", "P2", "P3", "P4"]
+  }
+}
